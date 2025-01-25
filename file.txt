@@ -1,0 +1,235 @@
+if _G.CanOpenCD == 'Y' or _G.CanOpenCD == nil then
+    _G.CanOpenCD = 'N'
+    local ScreenGui = Instance.new("ScreenGui")
+    local Frame = Instance.new("Frame")
+    local chat = Instance.new("TextButton")
+    local close = Instance.new("TextButton")
+    local clear = Instance.new("TextButton")
+    local changeGridButton = Instance.new("TextButton")
+    local dragButton = Instance.new("TextButton")
+    local gridSizeLabel = Instance.new("TextLabel")
+    local gridFrame = nil
+    local gridSizePopup = nil
+    local hearts = {"❤️", "💙", "💜", "🖤", "💛", "💚", "🧡", "🤎", "🤍", "💖"}
+    local selectedHeart = "❤️"
+    local currentGridSize = "None"
+    local isDragging = false
+
+    -- Parent GUI elements
+    ScreenGui.Parent = game.CoreGui
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    -- Main Frame
+    Frame.Parent = ScreenGui
+    Frame.Active = true
+    Frame.Draggable = true
+    Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    Frame.Position = UDim2.new(0.3, 0, 0.2, 0)
+    Frame.Size = UDim2.new(0.4, 0, 0.6, 0)
+
+    -- Grid Size Label
+    gridSizeLabel.Parent = Frame
+    gridSizeLabel.Text = "Grid Size: " .. currentGridSize
+    gridSizeLabel.Size = UDim2.new(0.6, 0, 0.08, 0)
+    gridSizeLabel.Position = UDim2.new(0.05, 0, 0, 0)
+    gridSizeLabel.BackgroundTransparency = 1
+    gridSizeLabel.TextColor3 = Color3.new(1, 1, 1)
+    gridSizeLabel.TextScaled = false
+    gridSizeLabel.TextSize = 16
+    gridSizeLabel.Font = Enum.Font.SourceSans
+
+    -- Change Grid Size Button
+    changeGridButton.Parent = Frame
+    changeGridButton.Text = "Change Grid Size"
+    changeGridButton.Size = UDim2.new(0.25, 0, 0.08, 0)
+    changeGridButton.Position = UDim2.new(0.65, 0, 0, 0)
+    changeGridButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+    changeGridButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    -- Drag Button
+    dragButton.Parent = Frame
+    dragButton.Text = "Enable Drag"
+    dragButton.Size = UDim2.new(0.25, 0, 0.08, 0)
+    dragButton.Position = UDim2.new(0.65, 0, 0.92, 0)
+    dragButton.BackgroundColor3 = Color3.fromRGB(153, 51, 255)
+    dragButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    -- Chat Button
+    chat.Parent = Frame
+    chat.Text = "Chat"
+    chat.Size = UDim2.new(0.2, 0, 0.08, 0)
+    chat.Position = UDim2.new(0.4, 0, 0.92, 0)
+    chat.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    chat.TextColor3 = Color3.fromRGB(0, 0, 0)
+
+    -- Close Button
+    close.Parent = Frame
+    close.Text = "X"
+    close.Size = UDim2.new(0.1, 0, 0.08, 0)
+    close.Position = UDim2.new(0.9, 0, 0, 0)
+    close.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    close.TextColor3 = Color3.fromRGB(0, 0, 0)
+
+    -- Clear Button
+    clear.Parent = Frame
+    clear.Text = "Clear"
+    clear.Size = UDim2.new(0.2, 0, 0.08, 0)
+    clear.Position = UDim2.new(0.1, 0, 0.92, 0)
+    clear.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+    clear.TextColor3 = Color3.fromRGB(0, 0, 0)
+
+    -- Function to create grid buttons
+    local function createGrid(size)
+        if gridFrame then gridFrame:Destroy() end
+        currentGridSize = size .. " x " .. size
+        gridSizeLabel.Text = "Grid Size: " .. currentGridSize
+
+        gridFrame = Instance.new("Frame")
+        gridFrame.Parent = Frame
+        gridFrame.Size = UDim2.new(0.8, 0, 0.6, 0) -- Slightly taller to ensure perfect square
+        gridFrame.Position = UDim2.new(0.1, 0, 0.12, 0) -- Adjusted higher
+        gridFrame.BackgroundTransparency = 1
+
+        local buttonSize = 1 / size -- Adjust size to make the grid a perfect square
+        for i = 1, size do
+            for j = 1, size do
+                local button = Instance.new("TextButton")
+                button.Parent = gridFrame
+                button.Size = UDim2.new(buttonSize, -2, buttonSize, -2)
+                button.Position = UDim2.new((j - 1) * buttonSize, 0, (i - 1) * buttonSize, 0)
+                button.Text = "🤍"
+                button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                button.TextColor3 = Color3.fromRGB(0, 0, 0)
+
+                button.MouseButton1Click:Connect(function()
+                    button.Text = button.Text == "🤍" and selectedHeart or "🤍"
+                end)
+
+                button.MouseEnter:Connect(function()
+                    if isDragging then
+                        button.Text = selectedHeart
+                    end
+                end)
+            end
+        end
+    end
+
+    -- Function to clear the grid
+    clear.MouseButton1Click:Connect(function()
+        if gridFrame then
+            for _, button in pairs(gridFrame:GetChildren()) do
+                if button:IsA("TextButton") then
+                    button.Text = "🤍"
+                end
+            end
+        end
+    end)
+
+    -- Function to send grid status via chat
+    chat.MouseButton1Click:Connect(function()
+        if gridFrame then
+            local gridStatus = ""
+            for i, button in ipairs(gridFrame:GetChildren()) do
+                if button:IsA("TextButton") then
+                    gridStatus = gridStatus .. button.Text
+                end
+
+                if i % math.sqrt(#gridFrame:GetChildren()) == 0 then
+                    if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.LegacyChatService then
+                        game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest"):FireServer(gridStatus, "All")
+                    else
+                        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(gridStatus)
+                    end
+                    gridStatus = ""
+                end
+            end
+        end
+    end)
+
+    -- Function to display heart selector
+    local function createHeartSelector()
+        local selectorFrame = Instance.new("Frame")
+        selectorFrame.Parent = Frame
+        selectorFrame.Size = UDim2.new(0.9, 0, 0.08, 0)
+        selectorFrame.Position = UDim2.new(0.05, 0, 0.73, 0)
+        selectorFrame.BackgroundTransparency = 1
+
+        for i, heart in ipairs(hearts) do
+            local button = Instance.new("TextButton")
+            button.Parent = selectorFrame
+            button.Size = UDim2.new(0.1, -5, 1, 0)
+            button.Position = UDim2.new((i - 1) * 0.1, 0, 0, 0)
+            button.Text = heart
+            button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            button.TextColor3 = Color3.fromRGB(0, 0, 0)
+
+            button.MouseButton1Click:Connect(function()
+                selectedHeart = heart
+            end)
+        end
+    end
+
+    -- Function to display grid size selection popup
+    local function showGridSizePopup()
+        if gridSizePopup then gridSizePopup:Destroy() end
+
+        gridSizePopup = Instance.new("Frame")
+        gridSizePopup.Parent = ScreenGui
+        gridSizePopup.Size = UDim2.new(0.3, 0, 0.2, 0)
+        gridSizePopup.Position = UDim2.new(0.35, 0, 0.4, 0)
+        gridSizePopup.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Parent = gridSizePopup
+        titleLabel.Text = "Select Grid Size"
+        titleLabel.Size = UDim2.new(1, 0, 0.4, 0)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.TextColor3 = Color3.new(1, 1, 1)
+
+        local button7x7 = Instance.new("TextButton")
+        button7x7.Parent = gridSizePopup
+        button7x7.Text = "7 x 7"
+        button7x7.Size = UDim2.new(0.4, 0, 0.4, 0)
+        button7x7.Position = UDim2.new(0.1, 0, 0.5, 0)
+        button7x7.BackgroundColor3 = Color3.fromRGB(0, 128, 0)
+
+        local button14x14 = Instance.new("TextButton")
+        button14x14.Parent = gridSizePopup
+        button14x14.Text = "14 x 14"
+        button14x14.Size = UDim2.new(0.4, 0, 0.4, 0)
+        button14x14.Position = UDim2.new(0.5, 0, 0.5, 0)
+        button14x14.BackgroundColor3 = Color3.fromRGB(128, 0, 0)
+
+        button7x7.MouseButton1Click:Connect(function()
+            createGrid(7)
+            createHeartSelector()
+            gridSizePopup:Destroy()
+        end)
+
+        button14x14.MouseButton1Click:Connect(function()
+            createGrid(14)
+            createHeartSelector()
+            gridSizePopup:Destroy()
+        end)
+    end
+
+    -- Enable Drag Selection
+    dragButton.MouseButton1Click:Connect(function()
+        isDragging = not isDragging
+        dragButton.Text = isDragging and "Disable Drag" or "Enable Drag"
+    end)
+
+    -- Change Grid Size Button Functionality
+    changeGridButton.MouseButton1Click:Connect(function()
+        showGridSizePopup()
+    end)
+
+    -- Initialize
+    showGridSizePopup()
+
+    -- Close Button Functionality
+    close.MouseButton1Click:Connect(function()
+        _G.CanOpenCD = 'Y'
+        ScreenGui:Destroy()
+    end)
+end
